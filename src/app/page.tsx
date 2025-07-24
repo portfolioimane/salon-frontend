@@ -29,7 +29,7 @@ export default function HomePage() {
       >
         <div className="absolute inset-0 bg-gradient-to-br from-rose-400/80 via-pink-400/70 to-orange-400/80"></div>
         <div
-          className="absolute inset-0 bg-cover bg-center opacity-30"
+          className="absolute inset-0 bg-cover bg-center opacity-10"
           style={{ backgroundImage: "url('/hero.jpg')" }}
         ></div>
 

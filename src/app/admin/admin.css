@@ -1,0 +1,45 @@
+/* app/admin/admin.css */
+
+.admin-layout {
+  font-family: 'Inter', sans-serif;
+}
+
+.sidebar {
+  background: linear-gradient(to bottom right, #f43f5e, #ec4899, #f97316);
+  color: white;
+}
+
+.sidebar h2 {
+  font-size: 1.875rem; /* text-3xl */
+  font-weight: 700; /* bold */
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.sidebar nav ul {
+  list-style: none;
+  padding: 0;
+}
+
+.sidebar nav li a {
+  display: block;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 1.125rem;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: white;
+}
+
+.sidebar nav li a:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fde68a; /* light yellow */
+}
+
+.admin-main {
+  background: linear-gradient(to bottom right, #fff1f2, #ffe4e6, #fff7ed);
+  padding: 2.5rem;
+  min-height: 100vh;
+  overflow-y: auto;
+  border-top-left-radius: 2rem;
+}

@@ -4,6 +4,9 @@ import "./globals.css";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { usePathname } from "next/navigation";
+import LayoutWrapper from "@/components/LayoutWrapper";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,14 +28,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // We can't use `usePathname` here directly because this is a server component
+  // Instead, move the layout logic to a client component wrapper
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <Navbar />
-            <main className="pt-10"> {/* Add top padding here */}
+        <LayoutWrapper>
           {children}
-        </main>
-        <Footer />
+        </LayoutWrapper>
       </body>
     </html>
   );
