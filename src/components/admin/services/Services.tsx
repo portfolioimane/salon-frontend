@@ -3,15 +3,19 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchServices, deleteService, toggleFeatured } from '@/store/admin/servicesSlice';
-import Link from 'next/link';
 import type { AppDispatch, RootState } from '@/store';
+import AddServiceModal from './AddServiceModal';
+import EditServiceModal from './EditServiceModal';  // <-- Import Edit modal
+import { FiPlus } from 'react-icons/fi';
 
 const AdminServices = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { list: services, loading, error } = useSelector((state: RootState) => state.servicesadmin);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [serviceToDelete, setServiceToDelete] = useState<number | null>(null);
+  const [editingServiceId, setEditingServiceId] = useState<number | null>(null); // <-- New state for editing modal
   const [hasFetched, setHasFetched] = useState(false);
 
   useEffect(() => {
@@ -47,12 +51,12 @@ const AdminServices = () => {
         <h1 className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-rose-600 via-pink-600 to-orange-600">
           Salon Services
         </h1>
-        <Link
-          href="/admin/services/add"
-          className="inline-block bg-gradient-to-r from-rose-500 via-pink-500 to-orange-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:from-rose-600 hover:via-pink-600 hover:to-orange-600 transition transform hover:scale-105"
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-2 bg-gradient-to-r from-rose-500 via-pink-500 to-orange-500 text-white px-6 py-3 rounded-xl font-semibold shadow-lg hover:from-rose-600 hover:via-pink-600 hover:to-orange-600 transition transform hover:scale-105"
         >
-          Add Service
-        </Link>
+          <FiPlus className="text-xl" /> Add Service
+        </button>
       </div>
 
       {/* Loading, Error, Empty */}
@@ -105,12 +109,12 @@ const AdminServices = () => {
                       </td>
                       <td className="border border-gray-200 px-4 py-3 text-center">
                         <div className="flex flex-col gap-2">
-                          <Link
-                            href={`/admin/services/${service.id}/edit`}
+                          <button
+                            onClick={() => setEditingServiceId(service.id)}  // <-- Open modal here
                             className="bg-gradient-to-r from-rose-500 via-pink-500 to-orange-500 hover:from-rose-600 hover:via-pink-600 hover:to-orange-600 text-white py-2 rounded-lg font-semibold shadow-md text-center transition-transform transform hover:scale-105"
                           >
                             Edit
-                          </Link>
+                          </button>
                           <button
                             onClick={() => handleDeleteClick(service.id)}
                             className="bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg font-semibold shadow-md transition-transform transform hover:scale-105"
@@ -151,6 +155,17 @@ const AdminServices = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Add Service Modal */}
+      {showAddModal && <AddServiceModal onClose={() => setShowAddModal(false)} />}
+
+      {/* Edit Service Modal */}
+      {editingServiceId !== null && (
+        <EditServiceModal
+          serviceId={editingServiceId}
+          onClose={() => setEditingServiceId(null)}
+        />
       )}
     </div>
   );

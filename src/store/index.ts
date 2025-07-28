@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import servicesadminReducer from './admin/servicesSlice'
 
+import servicesReducer from './frontend/servicesSlice'
 
 
 // store/index.ts or store/store.ts
@@ -10,6 +11,7 @@ import servicesadminReducer from './admin/servicesSlice'
 export const store = configureStore({
   reducer: {
     servicesadmin: servicesadminReducer,
+    services: servicesReducer,
  
   },
 })
