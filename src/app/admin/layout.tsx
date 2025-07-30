@@ -10,8 +10,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <nav>
           <ul className="space-y-4">
             <li><Link href="/admin" className="block hover:text-yellow-200">Dashboard</Link></li>
+            <li><Link href="/admin/businesshours" className="block hover:text-yellow-200">Business Hours</Link></li>
+           <li><Link href="/admin/services" className="block hover:text-yellow-200">Services</Link></li>
             <li><Link href="/admin/bookings" className="block hover:text-yellow-200">Bookings</Link></li>
-            <li><Link href="/admin/services" className="block hover:text-yellow-200">Services</Link></li>
             <li><Link href="/admin/gallery" className="block hover:text-yellow-200">Gallery</Link></li>
             <li><Link href="/admin/products" className="block hover:text-yellow-200">Products</Link></li>
             <li><Link href="/admin/employees" className="block hover:text-yellow-200">Employees</Link></li>
