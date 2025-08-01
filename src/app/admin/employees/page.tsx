@@ -1,472 +1,210 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState, ChangeEvent, FormEvent } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import type { RootState, AppDispatch } from "@/store";
 import {
-  Plus,
-  Edit3,
-  Trash2,
-  X,
-  Save,
-  CheckCircle,
-  AlertCircle,
-  XCircle,
-} from "lucide-react";
+  fetchEmployees,
+  addEmployee,
+  updateEmployee,
+  deleteEmployee,
+  clearValidationErrors,
+  Employee,
+} from "@/store/admin/employeeSlice";
 
-type Employee = {
-  id: number;
-  name: string;
-  role: string;
-  phone: string;
-  employeeId: string;
-  avatar: string;
-};
+const IMAGE_BASE_URL = process.env.NEXT_PUBLIC_IMAGE_URL || "";
 
-type AttendanceStatus = "present" | "late" | "absent" | "none";
+export default function EmployeePage() {
+  const dispatch = useDispatch<AppDispatch>();
+  const { list: employees, loading, error, validationErrors } = useSelector(
+    (state: RootState) => state.employee
+  );
 
-const initialEmployees: Employee[] = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    role: "Senior Stylist",
-    phone: "+1 555-0101",
-    employeeId: "EMP001",
-    avatar:
-      "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
-  },
-  {
-    id: 2,
-    name: "Michael Chen",
-    role: "Hair Colorist",
-    phone: "+1 555-0102",
-    employeeId: "EMP002",
-    avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
-  },
-  {
-    id: 3,
-    name: "Emma Williams",
-    role: "Nail Technician",
-    phone: "+1 555-0103",
-    employeeId: "EMP003",
-    avatar:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
-  },
-];
-
-export default function EmployeeWithAttendancePage() {
-  const [employees, setEmployees] = useState<Employee[]>(initialEmployees);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
-  const [formData, setFormData] = useState<Omit<Employee, "id">>({
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
+
+  const [formData, setFormData] = useState({
     name: "",
+    email: "",
     role: "",
     phone: "",
-    employeeId: "",
     avatar: "",
   });
 
-  // Attendance state: attendance[employeeId][dateString] = status
-  const [attendance, setAttendance] = useState<Record<
-    number,
-    Record<string, AttendanceStatus>
-  >>({});
+  useEffect(() => {
+    dispatch(fetchEmployees());
+  }, [dispatch]);
 
-  // Current year/month info
-  const today = new Date();
-  const currentYear = today.getFullYear();
-  const currentMonth = today.getMonth();
-
-  // Selected year/month for attendance (default to current)
-  const [selectedYear, setSelectedYear] = useState(currentYear);
-  const [selectedMonth, setSelectedMonth] = useState(currentMonth);
-
-  // Generate dates for selected month in correct order (1 to last day)
-  const daysInSelectedMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-  const datesInMonth = Array.from({ length: daysInSelectedMonth }, (_, i) => {
-    const d = new Date(selectedYear, selectedMonth, i + 1);
-    return d.toISOString().split("T")[0]; // "YYYY-MM-DD"
-  });
-
-  // Cycle through attendance status
-  function setAttendanceStatus(empId: number, date: string, status: AttendanceStatus) {
-    setAttendance((prev) => ({
-      ...prev,
-      [empId]: {
-        ...prev[empId],
-        [date]: status,
-      },
-    }));
-  }
-
-  // Modal handlers for employees
   const openAddModal = () => {
+    dispatch(clearValidationErrors());
     setEditingEmployee(null);
-    setFormData({ name: "", role: "", phone: "", employeeId: "", avatar: "" });
+    setAvatarFile(null);
+    setFormData({ name: "", email: "", role: "", phone: "", avatar: "" });
     setIsModalOpen(true);
   };
 
   const openEditModal = (emp: Employee) => {
+    dispatch(clearValidationErrors());
     setEditingEmployee(emp);
+    setAvatarFile(null);
     setFormData({
       name: emp.name,
-      role: emp.role,
-      phone: emp.phone,
-      employeeId: emp.employeeId,
-      avatar: emp.avatar,
+      email: emp.email || "",
+      role: emp.role || "",
+      phone: emp.phone || "",
+      avatar: emp.avatar || "",
     });
     setIsModalOpen(true);
   };
 
-  const deleteEmployee = (id: number) => {
-    if (
-      confirm(
-        "Are you sure you want to delete this employee? This will also delete their attendance."
-      )
-    ) {
-      setEmployees((prev) => prev.filter((e) => e.id !== id));
-      setAttendance((prev) => {
-        const copy = { ...prev };
-        delete copy[id];
-        return copy;
-      });
-    }
-  };
-
-  // Form submit
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim() || !formData.employeeId.trim()) {
-      alert("Please fill in at least the Name and Employee ID.");
-      return;
-    }
-    const duplicate = employees.find(
-      (e) =>
-        e.employeeId.toLowerCase() === formData.employeeId.toLowerCase() &&
-        e.id !== editingEmployee?.id
-    );
-    if (duplicate) {
-      alert("Employee ID must be unique.");
-      return;
-    }
-    if (editingEmployee) {
-      setEmployees((prev) =>
-        prev.map((e) => (e.id === editingEmployee.id ? { ...e, ...formData } : e))
-      );
-    } else {
-      const newEmp: Employee = {
-        id: employees.length ? Math.max(...employees.map((e) => e.id)) + 1 : 1,
-        ...formData,
-      };
-      setEmployees((prev) => [...prev, newEmp]);
-    }
+  const closeModal = () => {
     setIsModalOpen(false);
+    setEditingEmployee(null);
+    setAvatarFile(null);
+    dispatch(clearValidationErrors());
   };
 
-  // Confirm & change month with CSV export reminder
-  function handleChangeMonth(newMonth: number) {
-    if (newMonth === selectedMonth) return;
-
-    if (
-      confirm(
-        "Changing month will remove all current attendance data.\nPlease export the current month data as CSV if you want to keep it.\n\nDo you want to continue?"
-      )
-    ) {
-      setSelectedMonth(newMonth);
-      setAttendance({});
-    }
-  }
-
-  // Confirm & change year with CSV export reminder
-  function handleChangeYear(newYear: number) {
-    if (newYear === selectedYear) return;
-
-    if (
-      confirm(
-        "Changing year will remove all current attendance data.\nPlease export the current month data as CSV if you want to keep it.\n\nDo you want to continue?"
-      )
-    ) {
-      setSelectedYear(newYear);
-      setAttendance({});
-    }
-  }
-
-  // CSV export for attendance data
-  function exportCSV() {
-    if (employees.length === 0) {
-      alert("No employees to export.");
-      return;
-    }
-
-    // Header: Employee, Employee ID, Role, then dates
-    const header = [
-      "Employee Name",
-      "Employee ID",
-      "Role",
-      ...datesInMonth.map((date) => {
-        const d = new Date(date);
-        return d.getDate().toString(); // Just day number for columns
-      }),
-    ];
-
-    const rows = employees.map((emp) => {
-      const row = [
-        emp.name,
-        emp.employeeId,
-        emp.role,
-        ...datesInMonth.map((date) => attendance[emp.id]?.[date] || ""),
-      ];
-      return row;
-    });
-
-    const csvContent =
-      [header, ...rows]
-        .map((row) =>
-          row
-            .map((field) => `"${String(field).replace(/"/g, '""')}"`)
-            .join(",")
-        )
-        .join("\r\n") + "\r\n";
-
-    // Download CSV
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `attendance_${selectedYear}_${selectedMonth + 1}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  }
-
-  // Colors & icons for attendance status
-  const statusColors: Record<AttendanceStatus, string> = {
-    present: "bg-green-500",
-    late: "bg-yellow-500",
-    absent: "bg-red-500",
-    none: "bg-gray-300",
-  };
-
-  const StatusIcon = ({ status }: { status: AttendanceStatus }) => {
-    switch (status) {
-      case "present":
-        return <CheckCircle className="w-4 h-4 text-white" />;
-      case "late":
-        return <AlertCircle className="w-4 h-4 text-white" />;
-      case "absent":
-        return <XCircle className="w-4 h-4 text-white" />;
-      default:
-        return null;
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      if (file.size > 2 * 1024 * 1024) {
+        alert("File size must be less than 2MB");
+        e.target.value = "";
+        return;
+      }
+      setAvatarFile(file);
+      setFormData((f) => ({ ...f, avatar: URL.createObjectURL(file) }));
     }
   };
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    const data = new FormData();
+    data.append("name", formData.name);
+    data.append("email", formData.email);
+    data.append("role", formData.role);
+    data.append("phone", formData.phone);
+    if (avatarFile) data.append("avatar", avatarFile);
+
+    if (editingEmployee) {
+      await dispatch(updateEmployee({ id: editingEmployee.id, data }));
+    } else {
+      await dispatch(addEmployee(data));
+    }
+
+    if (!validationErrors) {
+      closeModal();
+    }
+  };
+
+  const openDeleteModal = (emp: Employee) => {
+    setEmployeeToDelete(emp);
+    setDeleteModalOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (employeeToDelete) {
+      dispatch(deleteEmployee(employeeToDelete.id));
+    }
+    setDeleteModalOpen(false);
+    setEmployeeToDelete(null);
+  };
+
+  const cancelDelete = () => {
+    setDeleteModalOpen(false);
+    setEmployeeToDelete(null);
+  };
+
+  const renderError = (field: string) =>
+    validationErrors?.[field] && (
+      <p className="text-red-600 text-sm mt-1">{validationErrors[field][0]}</p>
+    );
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Employees Section */}
-        <section>
-          <header className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900">Employees</h1>
-            <button
-              onClick={openAddModal}
-              className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-            >
-              <Plus className="w-5 h-5" /> Add Employee
-            </button>
-          </header>
-
-          <div className="bg-white rounded-lg shadow divide-y divide-gray-200">
-            {employees.length === 0 && (
-              <p className="p-6 text-center text-gray-500">
-                No employees found. Add some!
-              </p>
-            )}
-            {employees.map((emp) => (
-              <div
-                key={emp.id}
-                className="flex items-center justify-between p-4 hover:bg-gray-50"
-              >
-                <div className="flex items-center space-x-4">
-                  <img
-                    src={emp.avatar || "https://via.placeholder.com/80"}
-                    alt={emp.name}
-                    className="w-16 h-16 rounded-full object-cover"
-                  />
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      {emp.name}
-                    </h2>
-                    <p className="text-gray-600">{emp.role}</p>
-                    <p className="text-sm text-gray-500">{emp.phone}</p>
-                    <p className="text-xs text-gray-400">{emp.employeeId}</p>
-                  </div>
-                </div>
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => openEditModal(emp)}
-                    className="text-blue-600 hover:text-blue-800"
-                    aria-label={`Edit ${emp.name}`}
-                    title="Edit"
-                  >
-                    <Edit3 className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => deleteEmployee(emp.id)}
-                    className="text-red-600 hover:text-red-800"
-                    aria-label={`Delete ${emp.name}`}
-                    title="Delete"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Attendance Section */}
-        <section className="mt-10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Attendance for{" "}
-              {new Date(selectedYear, selectedMonth).toLocaleDateString("en-US", {
-                month: "long",
-                year: "numeric",
-              })}
-            </h2>
-
-            {/* Export CSV Button */}
-            <button
-              onClick={exportCSV}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded flex items-center gap-2"
-              title="Export attendance as CSV"
-            >
-              Export CSV
-            </button>
-          </div>
-
-          {/* Month & Year selector */}
-          <div className="mb-4 flex items-center space-x-4">
-            <label htmlFor="month-select" className="font-semibold">
-              Month:
-            </label>
-            <select
-              id="month-select"
-              value={selectedMonth}
-              onChange={(e) => handleChangeMonth(parseInt(e.target.value))}
-              className="border rounded px-2 py-1"
-            >
-              {Array.from({ length: 12 }, (_, i) => (
-                <option key={i} value={i}>
-                  {new Date(0, i).toLocaleString("en-US", { month: "long" })}
-                </option>
-              ))}
-            </select>
-
-            <label htmlFor="year-select" className="font-semibold">
-              Year:
-            </label>
-            <select
-              id="year-select"
-              value={selectedYear}
-              onChange={(e) => handleChangeYear(parseInt(e.target.value))}
-              className="border rounded px-2 py-1"
-            >
-              {Array.from({ length: 5 }, (_, i) => currentYear - 2 + i).map(
-                (year) => (
-                  <option key={year} value={year}>
-                    {year}
-                  </option>
-                )
-              )}
-            </select>
-          </div>
-
-          {/* Attendance table */}
-          <div className="overflow-auto border rounded-lg shadow bg-white">
-            <table className="min-w-full border-collapse table-fixed">
-              <thead className="bg-gray-50 sticky top-0">
-                <tr>
-                  <th className="border border-gray-200 px-3 py-2 w-40 text-left text-xs font-semibold text-gray-700 uppercase">
-                    Employee
-                  </th>
-                  {datesInMonth.map((date) => {
-                    const dayNum = new Date(date).getDate();
-                    return (
-                      <th
-                        key={date}
-                        className="border border-gray-200 px-2 py-1 w-10 text-center text-xs font-semibold text-gray-700 uppercase"
-                        title={new Date(date).toDateString()}
-                      >
-                        {dayNum}
-                      </th>
-                    );
-                  })}
-                </tr>
-              </thead>
-              <tbody>
-                {employees.map((emp) => (
-                  <tr
-                    key={emp.id}
-                    className="hover:bg-gray-50 even:bg-gray-50"
-                    title={emp.name}
-                  >
-                    <td className="border border-gray-200 px-3 py-2 font-medium text-gray-900">
-                      <div className="flex items-center space-x-2">
-                        <img
-                          src={emp.avatar || "https://via.placeholder.com/40"}
-                          alt={emp.name}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                        <span>{emp.name}</span>
-                      </div>
-                    </td>
-                    {datesInMonth.map((date) => {
-                      const status: AttendanceStatus =
-                        attendance[emp.id]?.[date] || "none";
-                      return (
-                        <td
-                          key={date}
-                          className={`border border-gray-200 p-1 cursor-pointer select-none text-center`}
-                          onClick={() => {
-                            // Cycle: none -> present -> late -> absent -> none
-                            const nextStatus: Record<
-                              AttendanceStatus,
-                              AttendanceStatus
-                            > = {
-                              none: "present",
-                              present: "late",
-                              late: "absent",
-                              absent: "none",
-                            };
-                            setAttendanceStatus(emp.id, date, nextStatus[status]);
-                          }}
-                          title={`Status: ${status}`}
-                        >
-                          <div
-                            className={`inline-flex items-center justify-center w-6 h-6 rounded-full ${
-                              statusColors[status]
-                            }`}
-                          >
-                            <StatusIcon status={status} />
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <p className="mt-2 text-sm text-gray-500">
-            Click on any day cell to cycle attendance status (Present → Late →
-            Absent → None)
-          </p>
-        </section>
+    <div className="max-w-5xl mx-auto p-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Employees</h1>
+        <button
+          onClick={openAddModal}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Add Employee
+        </button>
       </div>
 
-      {/* Modal for Add/Edit Employee */}
+      {error && <p className="text-red-600 mb-4">{error}</p>}
+
+      <table className="min-w-full border-collapse border border-gray-300">
+        <thead>
+          <tr>
+            <th className="border px-4 py-2">Name</th>
+            <th className="border px-4 py-2">Email</th>
+            <th className="border px-4 py-2">Role</th>
+            <th className="border px-4 py-2">Phone</th>
+            <th className="border px-4 py-2">Avatar</th>
+            <th className="border px-4 py-2">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <tr>
+              <td colSpan={6} className="text-center py-4">
+                Loading...
+              </td>
+            </tr>
+          ) : employees.length === 0 ? (
+            <tr>
+              <td colSpan={6} className="text-center py-4">
+                No employees found.
+              </td>
+            </tr>
+          ) : (
+            employees.map((emp) => (
+              <tr key={emp.id} className="hover:bg-gray-100">
+                <td className="border px-4 py-2">{emp.name}</td>
+                <td className="border px-4 py-2">{emp.email}</td>
+                <td className="border px-4 py-2">{emp.role}</td>
+                <td className="border px-4 py-2">{emp.phone}</td>
+                <td className="border px-4 py-2">
+                  {emp.avatar ? (
+                    <img
+                      src={
+                        emp.avatar.startsWith("http")
+                          ? emp.avatar
+                          : `${IMAGE_BASE_URL}/storage/${emp.avatar}`
+                      }
+                      alt={emp.name}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                  ) : (
+                    "No avatar"
+                  )}
+                </td>
+                <td className="border px-4 py-2 space-x-2">
+                  <button
+                    onClick={() => openEditModal(emp)}
+                    className="px-2 py-1 bg-yellow-400 rounded hover:bg-yellow-500"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => openDeleteModal(emp)}
+                    className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          )}
+        </tbody>
+      </table>
+
+      {/* Add/Edit Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
           <form
@@ -475,121 +213,103 @@ export default function EmployeeWithAttendancePage() {
           >
             <button
               type="button"
-              onClick={() => setIsModalOpen(false)}
+              onClick={closeModal}
               className="absolute top-3 right-3 text-gray-400 hover:text-gray-700"
-              aria-label="Close modal"
             >
-              <X className="w-6 h-6" />
+              ×
             </button>
 
             <h2 className="text-2xl font-semibold mb-4">
               {editingEmployee ? "Edit Employee" : "Add Employee"}
             </h2>
 
-            <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="name"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData((f) => ({ ...f, name: e.target.value }))
-                  }
-                  required
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g. Sarah Johnson"
-                />
-              </div>
+            <label className="block mb-2 font-semibold">
+              Name <span className="text-red-500">*</span>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData((f) => ({ ...f, name: e.target.value }))
+                }
+                required
+                className={`mt-1 block w-full border rounded p-2 ${
+                  validationErrors?.name ? "border-red-600" : "border-gray-300"
+                }`}
+              />
+              {renderError("name")}
+            </label>
 
-              <div>
-                <label
-                  htmlFor="role"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Role
-                </label>
-                <input
-                  id="role"
-                  type="text"
-                  value={formData.role}
-                  onChange={(e) =>
-                    setFormData((f) => ({ ...f, role: e.target.value }))
-                  }
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g. Senior Stylist"
-                />
-              </div>
+            <label className="block mb-2 font-semibold">
+              Email <span className="text-red-500">*</span>
+              <input
+                type="email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData((f) => ({ ...f, email: e.target.value }))
+                }
+                required
+                className={`mt-1 block w-full border rounded p-2 ${
+                  validationErrors?.email ? "border-red-600" : "border-gray-300"
+                }`}
+              />
+              {renderError("email")}
+            </label>
 
-              <div>
-                <label
-                  htmlFor="phone"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Phone
-                </label>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData((f) => ({ ...f, phone: e.target.value }))
-                  }
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g. +1 555-0101"
-                />
-              </div>
+            <label className="block mb-2 font-semibold">
+              Role
+              <input
+                type="text"
+                value={formData.role}
+                onChange={(e) =>
+                  setFormData((f) => ({ ...f, role: e.target.value }))
+                }
+                className={`mt-1 block w-full border rounded p-2`}
+              />
+              {renderError("role")}
+            </label>
 
-              <div>
-                <label
-                  htmlFor="employeeId"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Employee ID <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="employeeId"
-                  type="text"
-                  value={formData.employeeId}
-                  onChange={(e) =>
-                    setFormData((f) => ({ ...f, employeeId: e.target.value }))
-                  }
-                  required
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g. EMP001"
-                />
-              </div>
+            <label className="block mb-2 font-semibold">
+              Phone
+              <input
+                type="tel"
+                value={formData.phone}
+                onChange={(e) =>
+                  setFormData((f) => ({ ...f, phone: e.target.value }))
+                }
+                className="mt-1 block w-full border rounded p-2"
+              />
+              {renderError("phone")}
+            </label>
 
-              <div>
-                <label
-                  htmlFor="avatar"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Avatar URL
-                </label>
-                <input
-                  id="avatar"
-                  type="url"
-                  value={formData.avatar}
-                  onChange={(e) =>
-                    setFormData((f) => ({ ...f, avatar: e.target.value }))
+            <label className="block mb-2 font-semibold">
+              Avatar (max 2MB)
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="mt-1 block w-full"
+              />
+              {formData.avatar && (
+                <img
+                  src={
+                    avatarFile
+                      ? formData.avatar
+                      : formData.avatar.startsWith("http")
+                      ? formData.avatar
+                      : `${IMAGE_BASE_URL}/storage/${formData.avatar}`
                   }
-                  className="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="e.g. https://example.com/avatar.jpg"
+                  alt="Avatar Preview"
+                  className="mt-2 w-20 h-20 rounded-full object-cover"
                 />
-              </div>
-            </div>
+              )}
+              {renderError("avatar")}
+            </label>
 
-            <div className="mt-6 flex justify-end gap-4">
+            <div className="flex justify-end gap-4 mt-6">
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 border rounded border-gray-300 hover:bg-gray-100"
+                onClick={closeModal}
+                className="px-4 py-2 border rounded hover:bg-gray-100"
               >
                 Cancel
               </button>
@@ -597,11 +317,37 @@ export default function EmployeeWithAttendancePage() {
                 type="submit"
                 className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
               >
-                <Save className="inline w-5 h-5 mr-1 -mt-0.5" />
                 Save
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {deleteModalOpen && employeeToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-sm w-full p-6">
+            <h3 className="text-xl font-semibold mb-4">Confirm Delete</h3>
+            <p className="mb-6">
+              Are you sure you want to delete{" "}
+              <span className="font-bold">{employeeToDelete.name}</span>?
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 border rounded hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

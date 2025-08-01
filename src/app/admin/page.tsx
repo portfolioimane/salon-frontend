@@ -1,20 +1,15 @@
 "use client";
 
-import React, { useState } from "react";
-
-type ServiceReport = {
-  serviceName: string;
-  timesBooked: number;
-  revenue: number;
-};
-
-type ClientReport = {
-  clientName: string;
-  visits: number;
-};
+import React, { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchSummaryReport,
+  fetchPopularServices,
+  fetchTopClients,
+} from "@/store/admin/reportSlice";
+import type { RootState, AppDispatch } from "@/store";
 
 export default function SalonReportsPage() {
-  // Date selectors (month/year)
   const today = new Date();
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth();
@@ -22,25 +17,21 @@ export default function SalonReportsPage() {
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
 
-  // Dummy data — replace with real API calls or props
-  const totalAppointments = 124;
-  const totalRevenue = 15430; // in MAD or your currency
-  const newCustomers = 23;
-  const occupancyRate = 75; // in %
+  const dispatch = useDispatch<AppDispatch>();
 
-  const popularServices: ServiceReport[] = [
-    { serviceName: "Haircut", timesBooked: 45, revenue: 4500 },
-    { serviceName: "Hair Coloring", timesBooked: 30, revenue: 6000 },
-    { serviceName: "Manicure", timesBooked: 25, revenue: 2500 },
-    { serviceName: "Facial", timesBooked: 15, revenue: 2250 },
-    { serviceName: "Massage", timesBooked: 9, revenue: 1680 },
-  ];
+  const {
+    summary,
+    popularServices,
+    topClients,
+    loading,
+    error,
+  } = useSelector((state: RootState) => state.report);
 
-  const topClients: ClientReport[] = [
-    { clientName: "Amina El-Fassi", visits: 12 },
-    { clientName: "Mohamed Idrissi", visits: 9 },
-    { clientName: "Sara Benali", visits: 7 },
-  ];
+  useEffect(() => {
+    dispatch(fetchSummaryReport({ year: selectedYear, month: selectedMonth }));
+    dispatch(fetchPopularServices({ year: selectedYear, month: selectedMonth }));
+    dispatch(fetchTopClients({ year: selectedYear, month: selectedMonth }));
+  }, [dispatch, selectedYear, selectedMonth]);
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8">
@@ -88,27 +79,31 @@ export default function SalonReportsPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl p-6 border border-white/40 hover:shadow-2xl transition">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Total Appointments</h2>
-          <p className="text-4xl font-extrabold text-rose-600">{totalAppointments}</p>
-        </div>
+      {summary && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl p-6 border border-white/40 hover:shadow-2xl transition">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Total Appointments</h2>
+            <p className="text-4xl font-extrabold text-rose-600">{summary.totalAppointments}</p>
+          </div>
 
-        <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl p-6 border border-white/40 hover:shadow-2xl transition">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Total Revenue</h2>
-          <p className="text-4xl font-extrabold text-pink-600">{totalRevenue.toLocaleString()} MAD</p>
-        </div>
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl p-6 border border-white/40 hover:shadow-2xl transition">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Total Revenue</h2>
+            <p className="text-4xl font-extrabold text-pink-600">
+              {summary.totalRevenue.toLocaleString()} MAD
+            </p>
+          </div>
 
-        <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl p-6 border border-white/40 hover:shadow-2xl transition">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">New Customers</h2>
-          <p className="text-4xl font-extrabold text-orange-600">{newCustomers}</p>
-        </div>
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl p-6 border border-white/40 hover:shadow-2xl transition">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">New Customers</h2>
+            <p className="text-4xl font-extrabold text-orange-600">{summary.newCustomers}</p>
+          </div>
 
-        <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl p-6 border border-white/40 hover:shadow-2xl transition">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Occupancy Rate</h2>
-          <p className="text-4xl font-extrabold text-purple-600">{occupancyRate}%</p>
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-xl p-6 border border-white/40 hover:shadow-2xl transition">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Occupancy Rate</h2>
+            <p className="text-4xl font-extrabold text-purple-600">{summary.occupancyRate}%</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Popular Services Table */}
       <section className="bg-white rounded-3xl shadow-xl p-6 border border-white/40 hover:shadow-2xl transition">
@@ -122,13 +117,27 @@ export default function SalonReportsPage() {
             </tr>
           </thead>
           <tbody>
-            {popularServices.map(({ serviceName, timesBooked, revenue }) => (
-              <tr key={serviceName} className="hover:bg-gray-50 transition-colors">
-                <td className="border border-gray-300 px-6 py-3">{serviceName}</td>
-                <td className="border border-gray-300 px-6 py-3 text-center">{timesBooked}</td>
-                <td className="border border-gray-300 px-6 py-3 text-right">{revenue.toLocaleString()}</td>
+            {loading ? (
+              <tr>
+                <td colSpan={3} className="text-center py-4 text-gray-500">
+                  Loading popular services...
+                </td>
               </tr>
-            ))}
+            ) : popularServices.length > 0 ? (
+              popularServices.map(({ serviceName, timesBooked, revenue }) => (
+                <tr key={serviceName} className="hover:bg-gray-50 transition-colors">
+                  <td className="border border-gray-300 px-6 py-3">{serviceName}</td>
+                  <td className="border border-gray-300 px-6 py-3 text-center">{timesBooked}</td>
+                  <td className="border border-gray-300 px-6 py-3 text-right">{revenue.toLocaleString()}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={3} className="text-center py-4 text-gray-500">
+                  No popular services found.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </section>
@@ -144,12 +153,26 @@ export default function SalonReportsPage() {
             </tr>
           </thead>
           <tbody>
-            {topClients.map(({ clientName, visits }) => (
-              <tr key={clientName} className="hover:bg-gray-50 transition-colors">
-                <td className="border border-gray-300 px-6 py-3">{clientName}</td>
-                <td className="border border-gray-300 px-6 py-3 text-center">{visits}</td>
+            {loading ? (
+              <tr>
+                <td colSpan={2} className="text-center py-4 text-gray-500">
+                  Loading top clients...
+                </td>
               </tr>
-            ))}
+            ) : topClients.length > 0 ? (
+              topClients.map(({ clientName, visits }) => (
+                <tr key={clientName} className="hover:bg-gray-50 transition-colors">
+                  <td className="border border-gray-300 px-6 py-3">{clientName}</td>
+                  <td className="border border-gray-300 px-6 py-3 text-center">{visits}</td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={2} className="text-center py-4 text-gray-500">
+                  No top clients found.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </section>

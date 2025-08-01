@@ -1,90 +1,85 @@
 "use client";
 
-import { useState } from "react";
-
-type Revenue = {
-  id: number;
-  source: string;
-  amount: number;
-  date: string;
-};
-
-type Expense = {
-  id: number;
-  reason: string;
-  amount: number;
-  date: string;
-};
+import { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import type { RootState, AppDispatch } from "@/store"; // Adjust path if needed
+import {
+  fetchFinances,
+  addFinance,
+  deleteFinance,
+  Finance,
+} from "@/store/admin/financeSlice"; // Adjust path if needed
 
 export default function FinancePage() {
-  // Initial fake data
-  const [revenues, setRevenues] = useState<Revenue[]>([
-    { id: 1, source: "Booking - Haircut", amount: 150, date: "2025-07-01" },
-    { id: 2, source: "Booking - Facial", amount: 200, date: "2025-07-02" },
-    { id: 3, source: "Manual Income - Product Sale", amount: 300, date: "2025-07-03" },
-  ]);
+  const dispatch = useDispatch<AppDispatch>();
+  const finances = useSelector((state: RootState) => state.finance.list);
+  const loading = useSelector((state: RootState) => state.finance.loading);
+  const error = useSelector((state: RootState) => state.finance.error);
 
-  const [expenses, setExpenses] = useState<Expense[]>([
-    { id: 1, reason: "Staff Salary", amount: 1000, date: "2025-07-01" },
-    { id: 2, reason: "Product Restock", amount: 400, date: "2025-07-04" },
-    { id: 3, reason: "Electricity Bill", amount: 250, date: "2025-07-05" },
-  ]);
+  // Separate revenues and expenses by type
+  const revenues = finances.filter((f) => f.type === "revenue");
+  const expenses = finances.filter((f) => f.type === "expense");
 
+  // Local modal & form states
   const [showRevenueModal, setShowRevenueModal] = useState(false);
   const [showExpenseModal, setShowExpenseModal] = useState(false);
 
-  const [newRevenue, setNewRevenue] = useState({ source: "", amount: "", date: "" });
-  const [newExpense, setNewExpense] = useState({ reason: "", amount: "", date: "" });
+  const [newRevenue, setNewRevenue] = useState({ title: "", amount: "", date: "" });
+  const [newExpense, setNewExpense] = useState({ title: "", amount: "", date: "" });
 
-  // Calculate totals
-  const totalRevenue = revenues.reduce((sum, r) => sum + r.amount, 0);
-  const totalExpense = expenses.reduce((sum, e) => sum + e.amount, 0);
-  const netProfit = totalRevenue - totalExpense;
+  // Calculate totals or null while loading
+  const totalRevenue = loading ? null : revenues.reduce((sum, r) => sum + Number(r.amount), 0);
+  const totalExpense = loading ? null : expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const netProfit =
+    totalRevenue !== null && totalExpense !== null ? totalRevenue - totalExpense : null;
 
-  // Handlers to add new revenue/expense
+  // Fetch finances on mount
+  useEffect(() => {
+    dispatch(fetchFinances());
+  }, [dispatch]);
+
+  // Handlers to add revenue or expense
   function addRevenue() {
-    if (!newRevenue.source || !newRevenue.amount || !newRevenue.date) {
+    if (!newRevenue.title || !newRevenue.amount || !newRevenue.date) {
       alert("Please fill all fields.");
       return;
     }
-    setRevenues((prev) => [
-      ...prev,
-      {
-        id: prev.length ? prev[prev.length - 1].id + 1 : 1,
-        source: newRevenue.source,
+    dispatch(
+      addFinance({
+        title: newRevenue.title,
         amount: Number(newRevenue.amount),
         date: newRevenue.date,
-      },
-    ]);
-    setNewRevenue({ source: "", amount: "", date: "" });
+        type: "revenue",
+      })
+    );
+    setNewRevenue({ title: "", amount: "", date: "" });
     setShowRevenueModal(false);
   }
 
   function addExpense() {
-    if (!newExpense.reason || !newExpense.amount || !newExpense.date) {
+    if (!newExpense.title || !newExpense.amount || !newExpense.date) {
       alert("Please fill all fields.");
       return;
     }
-    setExpenses((prev) => [
-      ...prev,
-      {
-        id: prev.length ? prev[prev.length - 1].id + 1 : 1,
-        reason: newExpense.reason,
+    dispatch(
+      addFinance({
+        title: newExpense.title,
         amount: Number(newExpense.amount),
         date: newExpense.date,
-      },
-    ]);
-    setNewExpense({ reason: "", amount: "", date: "" });
+        type: "expense",
+      })
+    );
+    setNewExpense({ title: "", amount: "", date: "" });
     setShowExpenseModal(false);
   }
 
-  // Handlers to delete revenue/expense
+  // Handlers to delete revenue or expense by id
   function deleteRevenue(id: number) {
-    setRevenues((prev) => prev.filter((r) => r.id !== id));
+    dispatch(deleteFinance(id));
   }
 
   function deleteExpense(id: number) {
-    setExpenses((prev) => prev.filter((e) => e.id !== id));
+    dispatch(deleteFinance(id));
   }
 
   return (
@@ -95,9 +90,17 @@ export default function FinancePage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+        {/* Total Revenue */}
         <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl p-6 border border-white/40 flex flex-col">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Total Revenue</h2>
-          <p className="text-3xl font-bold text-rose-500">{totalRevenue} MAD</p>
+          <p className="text-3xl font-bold text-rose-500">
+            {totalRevenue !== null
+              ? totalRevenue.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }) + " MAD"
+              : "Loading..."}
+          </p>
           <button
             onClick={() => setShowRevenueModal(true)}
             className="mt-auto mt-4 w-full bg-gradient-to-r from-rose-500 via-pink-500 to-orange-500 text-white py-2 rounded-xl font-semibold hover:from-rose-600 hover:via-pink-600 hover:to-orange-600 transition-all duration-300 shadow-lg"
@@ -106,9 +109,17 @@ export default function FinancePage() {
           </button>
         </div>
 
+        {/* Total Expenses */}
         <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl p-6 border border-white/40 flex flex-col">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Total Expenses</h2>
-          <p className="text-3xl font-bold text-orange-500">{totalExpense} MAD</p>
+          <p className="text-3xl font-bold text-orange-500">
+            {totalExpense !== null
+              ? totalExpense.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }) + " MAD"
+              : "Loading..."}
+          </p>
           <button
             onClick={() => setShowExpenseModal(true)}
             className="mt-auto mt-4 w-full bg-gradient-to-r from-rose-500 via-pink-500 to-orange-500 text-white py-2 rounded-xl font-semibold hover:from-rose-600 hover:via-pink-600 hover:to-orange-600 transition-all duration-300 shadow-lg"
@@ -117,10 +128,20 @@ export default function FinancePage() {
           </button>
         </div>
 
+        {/* Net Profit */}
         <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl p-6 border border-white/40 flex flex-col">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Net Profit</h2>
-          <p className={`text-3xl font-bold ${netProfit >= 0 ? "text-green-500" : "text-red-500"}`}>
-            {netProfit} MAD
+          <p
+            className={`text-3xl font-bold ${
+              netProfit !== null && netProfit >= 0 ? "text-green-500" : "text-red-500"
+            }`}
+          >
+            {netProfit !== null
+              ? netProfit.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }) + " MAD"
+              : "Loading..."}
           </p>
         </div>
       </div>
@@ -141,7 +162,7 @@ export default function FinancePage() {
             <tbody>
               {revenues.map((rev) => (
                 <tr key={rev.id} className="border-b border-white/40">
-                  <td className="px-6 py-4 text-gray-800">{rev.source}</td>
+                  <td className="px-6 py-4 text-gray-800">{rev.title}</td>
                   <td className="px-6 py-4 text-rose-600 font-semibold">{rev.amount}</td>
                   <td className="px-6 py-4 text-gray-600">{rev.date}</td>
                   <td className="px-6 py-4">
@@ -155,6 +176,13 @@ export default function FinancePage() {
                   </td>
                 </tr>
               ))}
+              {revenues.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
+                    No revenues found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -176,7 +204,7 @@ export default function FinancePage() {
             <tbody>
               {expenses.map((exp) => (
                 <tr key={exp.id} className="border-b border-white/40">
-                  <td className="px-6 py-4 text-gray-800">{exp.reason}</td>
+                  <td className="px-6 py-4 text-gray-800">{exp.title}</td>
                   <td className="px-6 py-4 text-orange-500 font-semibold">{exp.amount}</td>
                   <td className="px-6 py-4 text-gray-600">{exp.date}</td>
                   <td className="px-6 py-4">
@@ -190,6 +218,13 @@ export default function FinancePage() {
                   </td>
                 </tr>
               ))}
+              {expenses.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
+                    No expenses found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -211,8 +246,8 @@ export default function FinancePage() {
                 type="text"
                 placeholder="Source"
                 className="w-full p-3 border border-gray-300 rounded-xl"
-                value={newRevenue.source}
-                onChange={(e) => setNewRevenue({ ...newRevenue, source: e.target.value })}
+                value={newRevenue.title}
+                onChange={(e) => setNewRevenue({ ...newRevenue, title: e.target.value })}
                 required
               />
               <input
@@ -268,8 +303,8 @@ export default function FinancePage() {
                 type="text"
                 placeholder="Reason"
                 className="w-full p-3 border border-gray-300 rounded-xl"
-                value={newExpense.reason}
-                onChange={(e) => setNewExpense({ ...newExpense, reason: e.target.value })}
+                value={newExpense.title}
+                onChange={(e) => setNewExpense({ ...newExpense, title: e.target.value })}
                 required
               />
               <input
@@ -307,6 +342,14 @@ export default function FinancePage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Loading & error */}
+      {loading && (
+        <p className="text-center text-gray-500 mt-4">Loading finances...</p>
+      )}
+      {error && (
+        <p className="text-center text-red-600 mt-4">Error: {error}</p>
       )}
     </div>
   );

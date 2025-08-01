@@ -40,9 +40,9 @@ const ServiceList = () => {
     <section className="max-w-7xl mx-auto px-6 py-12 bg-gradient-to-br from-rose-50 via-pink-50 to-orange-50 rounded-3xl shadow-lg">
       {/* Category Filter */}
       <div className="mb-12 text-center">
-        <h2 className="text-3xl font-extrabold text-gray-800 mb-6 tracking-wide drop-shadow-sm">
-          Our Services
-        </h2>
+              <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-rose-600 via-pink-600 to-orange-600 bg-clip-text text-transparent py-5 px-6 max-w-4xl mx-auto text-center">
+     Our Services
+  </h2>
         <div className="flex flex-wrap justify-center gap-4">
           <button
             className={`px-5 py-2 rounded-full text-sm font-semibold border transition ${

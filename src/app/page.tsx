@@ -1,5 +1,6 @@
 import PopularServiceWrapper from '@/components/frontend/services/popularservices/PopularServiceWrapper';
 import api from '@/utils/axios';
+import Gallery from "@/components/frontend/gallery";
 
 
 export default async function HomePage() {
@@ -51,11 +52,16 @@ export default async function HomePage() {
             <p className="text-xl md:text-2xl leading-relaxed max-w-2xl mx-auto text-white/95 mb-10 drop-shadow-lg">
               Discover your inner radiance with our expert team. Hair, skin, and style – crafted with passion and precision.
             </p>
-            <button className="group relative px-8 py-4 bg-white text-gray-800 rounded-full font-semibold text-lg shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 transition-all duration-300">
-              <span className="relative z-10">Book Your Transformation</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-rose-400 to-pink-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <span className="absolute inset-0 rounded-full bg-gradient-to-r from-rose-400 to-pink-400 opacity-0 group-hover:opacity-20 animate-pulse"></span>
-            </button>
+
+<a
+  href="/services"
+  className="group relative px-8 py-4 bg-white text-gray-800 rounded-full font-semibold text-lg shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 transition-all duration-300 inline-block"
+>
+  <span className="relative z-10">Book Your Transformation</span>
+  <div className="absolute inset-0 bg-gradient-to-r from-rose-400 to-pink-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+  <span className="absolute inset-0 rounded-full bg-gradient-to-r from-rose-400 to-pink-400 opacity-0 group-hover:opacity-20 animate-pulse"></span>
+</a>
+
           </div>
         </div>
       </section>
@@ -66,78 +72,30 @@ export default async function HomePage() {
 
       {/* Property List */}
       <section id="services">
+         <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-rose-600 via-pink-600 to-orange-600 bg-clip-text text-transparent py-5 px-6 max-w-4xl mx-auto text-center">
+     Our Services
+  </h2>
         <PopularServiceWrapper services={popularservices} />
       </section>
 
           {/* About Section */}
-<section id="about" className="py-20 px-6 max-w-7xl mx-auto">
-  <div className="grid md:grid-cols-2 gap-12 items-center">
-    {/* Image Column */}
-    <div className="overflow-hidden rounded-3xl shadow-xl">
-      <img
-        src="/about.jpg"
-        alt="About Our Salon"
-        className="w-full h-full object-cover hover:scale-105 transition-transform duration-700"
-        loading="lazy"
-      />
-    </div>
-
-    {/* Text Column */}
-    <div>
-      <h2 className="text-5xl font-bold mb-6 bg-gradient-to-r from-rose-600 via-pink-600 to-orange-600 bg-clip-text text-transparent">
-        About Us
-      </h2>
-      <p className="text-lg text-gray-700 leading-relaxed mb-6">
-        At our salon, we believe in bringing out the best version of you. With years of experience and a passion for beauty, our expert team offers personalized care tailored to your unique style and needs.
-      </p>
-      <p className="text-lg text-gray-700 leading-relaxed">
-        Whether you're preparing for a special occasion or simply want to treat yourself, we're here to make every visit unforgettable with premium services and warm, professional care.
-      </p>
-    </div>
-  </div>
+<section id="about" className="py-20 px-6 max-w-4xl mx-auto text-center">
+  <h2 className="text-4xl font-bold mb-6 bg-gradient-to-r from-rose-600 via-pink-600 to-orange-600 bg-clip-text text-transparent py-5">
+    About Us
+  </h2>
+  <p className="text-lg text-gray-700 leading-relaxed mb-6">
+    At our salon, we believe in bringing out the best version of you. With years of experience and a passion for beauty, our expert team offers personalized care tailored to your unique style and needs.
+  </p>
+  <p className="text-lg text-gray-700 leading-relaxed">
+    Whether you're preparing for a special occasion or simply want to treat yourself, we're here to make every visit unforgettable with premium services and warm, professional care.
+  </p>
 </section>
 
 
 
-      {/* Our Work Gallery */}
-      <section id="work" className="py-20 px-6 max-w-7xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-rose-600 via-pink-600 to-orange-600 bg-clip-text text-transparent">
-            Our Work
-          </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Witness the artistry and transformation through our featured work
-          </p>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {galleryImages.map((src, i) => (
-            <div
-              key={i}
-              className="group relative overflow-hidden rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 aspect-square"
-            >
-              <img
-                src={src}
-                alt={`Gallery image ${i + 1}`}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                loading="lazy"
-              />
-
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-
-              {/* Hover content */}
-              <div className="absolute bottom-6 left-6 right-6 text-white transform translate-y-6 group-hover:translate-y-0 opacity-0 group-hover:opacity-100 transition-all duration-500">
-                <h3 className="text-xl font-semibold mb-2">Beautiful Transformation</h3>
-                <p className="text-sm opacity-90">Professional styling & care</p>
-              </div>
-
-              {/* Decorative corner */}
-              <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-white/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ✅ Gallery Component */}
+      <Gallery />
 
       {/* Testimonials */}
       <section id="testimonials" className="py-20 px-6 max-w-7xl mx-auto">

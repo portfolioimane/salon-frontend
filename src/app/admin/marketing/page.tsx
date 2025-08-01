@@ -1,158 +1,114 @@
 "use client";
-
-import React, { useState } from "react";
-
-type Campaign = {
-  id: number;
-  name: string;
-  description: string;
-  startDate: string;
-  endDate: string;
-  active: boolean;
-  bookingsGenerated: number;
-};
-
-const initialCampaigns: Campaign[] = [
-  {
-    id: 1,
-    name: "Spring Special 20% Off",
-    description: "Discount on all haircuts and color services during April",
-    startDate: "2025-04-01",
-    endDate: "2025-04-30",
-    active: true,
-    bookingsGenerated: 34,
-  },
-  {
-    id: 2,
-    name: "Refer a Friend Bonus",
-    description: "Clients get a free manicure for every friend referred",
-    startDate: "2025-03-15",
-    endDate: "2025-05-15",
-    active: false,
-    bookingsGenerated: 12,
-  },
-];
+import React, { useEffect, useState, ChangeEvent, FormEvent } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import type { RootState, AppDispatch } from '@/store';
+import { fetchCampaigns, addCampaign, updateCampaign, deleteCampaign, Campaign } from '@/store/admin/campaignSlice';
 
 export default function MarketingPage() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>(initialCampaigns);
-  const [newCampaign, setNewCampaign] = useState<Omit<Campaign, "id" | "bookingsGenerated">>({
-    name: "",
-    description: "",
-    startDate: "",
-    endDate: "",
+  const dispatch = useDispatch<AppDispatch>();
+  const { list: campaigns, loading, error } = useSelector((s: RootState) => s.campaigns);
+
+  const [form, setForm] = useState<Omit<Campaign, 'id'>>({
+    name: '',
+    description: '',
+    start_date: '',
+    end_date: '',
     active: false,
   });
+  const [editingId, setEditingId] = useState<number | null>(null);
 
-  const handleAddCampaign = () => {
-    if (!newCampaign.name || !newCampaign.startDate || !newCampaign.endDate) {
-      alert("Please fill in all required fields.");
-      return;
-    }
-    const nextId = campaigns.length ? Math.max(...campaigns.map(c => c.id)) + 1 : 1;
-    setCampaigns([...campaigns, { ...newCampaign, id: nextId, bookingsGenerated: 0 }]);
-    setNewCampaign({ name: "", description: "", startDate: "", endDate: "", active: false });
-  };
+  useEffect(() => { dispatch(fetchCampaigns()); }, [dispatch]);
 
-  const toggleCampaignActive = (id: number) => {
-    setCampaigns(campaigns.map(c => c.id === id ? { ...c, active: !c.active } : c));
+  const reset = () => setForm({ name: '', description: '', start_date: '', end_date: '', active: false });
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    if (editingId != null) dispatch(updateCampaign({ id: editingId, data: form }));
+    else dispatch(addCampaign(form));
+    reset();
+    setEditingId(null);
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 bg-white rounded shadow">
-      <h1 className="text-3xl font-bold mb-6 text-gray-900">Salon Marketing Campaigns</h1>
-
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4">Add New Campaign</h2>
-        <div className="space-y-3 max-w-md">
-          <input
-            type="text"
-            placeholder="Campaign Name"
-            value={newCampaign.name}
-            onChange={e => setNewCampaign({ ...newCampaign, name: e.target.value })}
-            className="w-full border rounded px-3 py-2"
-          />
-          <textarea
-            placeholder="Description (optional)"
-            value={newCampaign.description}
-            onChange={e => setNewCampaign({ ...newCampaign, description: e.target.value })}
-            className="w-full border rounded px-3 py-2"
-          />
-          <div className="flex gap-4">
-            <div>
-              <label className="block mb-1">Start Date</label>
-              <input
-                type="date"
-                value={newCampaign.startDate}
-                onChange={e => setNewCampaign({ ...newCampaign, startDate: e.target.value })}
-                className="border rounded px-3 py-2"
-              />
-            </div>
-            <div>
-              <label className="block mb-1">End Date</label>
-              <input
-                type="date"
-                value={newCampaign.endDate}
-                onChange={e => setNewCampaign({ ...newCampaign, endDate: e.target.value })}
-                className="border rounded px-3 py-2"
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              id="active"
-              type="checkbox"
-              checked={newCampaign.active}
-              onChange={e => setNewCampaign({ ...newCampaign, active: e.target.checked })}
-            />
-            <label htmlFor="active">Active</label>
-          </div>
-          <button
-            onClick={handleAddCampaign}
-            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-          >
-            Add Campaign
-          </button>
+    <div className="p-6 max-w-7xl mx-auto bg-white rounded shadow">
+      <h1 className="text-3xl font-bold mb-6">Salon Marketing Campaigns</h1>
+      {!!error && <p className="text-red-500 mb-4">{error}</p>}
+      
+      <form onSubmit={submit} className="space-y-4 mb-8 max-w-md">
+        <input type="text" placeholder="Campaign Name" value={form.name}
+          required onChange={e => setForm({ ...form, name: e.target.value })} className="w-full border rounded p-2" />
+        <textarea placeholder="Description" value={form.description}
+          onChange={e => setForm({ ...form, description: e.target.value })} className="w-full border rounded p-2" />
+        <div className="flex gap-4">
+          <input type="date" value={form.start_date} required
+            onChange={e => setForm({ ...form, start_date: e.target.value })} className="border rounded p-2" />
+          <input type="date" value={form.end_date} required
+            onChange={e => setForm({ ...form, end_date: e.target.value })} className="border rounded p-2" />
         </div>
-      </section>
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={form.active} onChange={e => setForm({ ...form, active: e.target.checked })} />
+          Active
+        </label>
+        <button type="submit" className="bg-green-600 text-white px-4 py-2 rounded">
+          {editingId != null ? 'Update Campaign' : 'Add Campaign'}
+        </button>
+      </form>
 
-      <section>
-        <h2 className="text-xl font-semibold mb-4">Current Campaigns</h2>
-        {campaigns.length === 0 ? (
-          <p>No campaigns found.</p>
-        ) : (
-          <table className="min-w-full border-collapse border border-gray-300">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="border border-gray-300 px-4 py-2 text-left">Name</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">Description</th>
-                <th className="border border-gray-300 px-4 py-2">Start Date</th>
-                <th className="border border-gray-300 px-4 py-2">End Date</th>
-                <th className="border border-gray-300 px-4 py-2">Bookings Generated</th>
-                <th className="border border-gray-300 px-4 py-2">Active</th>
-              </tr>
-            </thead>
-            <tbody>
-              {campaigns.map(({ id, name, description, startDate, endDate, bookingsGenerated, active }) => (
-                <tr key={id} className="hover:bg-gray-50">
-                  <td className="border border-gray-300 px-4 py-2 font-medium">{name}</td>
-                  <td className="border border-gray-300 px-4 py-2">{description}</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">{startDate}</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">{endDate}</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">{bookingsGenerated}</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">
-                    <input
-                      type="checkbox"
-                      checked={active}
-                      onChange={() => toggleCampaignActive(id)}
-                      className="cursor-pointer"
-                    />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </section>
+{loading ? (
+  <p>Loading...</p>
+) : (
+  <div className="overflow-x-auto">
+    <table className="min-w-full border border-gray-300">
+      <thead className="bg-gray-100">
+        <tr>
+          <th className="text-left px-4 py-2">Name</th>
+          <th className="text-left px-4 py-2">Description</th>
+          <th className="text-left px-4 py-2">Start</th>
+          <th className="text-left px-4 py-2">End</th>
+          <th className="text-center px-4 py-2">Active</th>
+          <th className="text-center px-4 py-2">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {campaigns.map((c) => (
+          <tr key={c.id} className="hover:bg-gray-50 border-t">
+            <td className="px-4 py-2 whitespace-nowrap">{c.name}</td>
+            <td className="px-4 py-2">{c.description}</td>
+            <td className="px-4 py-2 whitespace-nowrap">{c.start_date}</td>
+            <td className="px-4 py-2 whitespace-nowrap">{c.end_date}</td>
+            <td className="text-center px-4 py-2">{c.active ? "✔️" : "—"}</td>
+            <td className="px-4 py-2">
+              <div className="flex justify-center gap-2">
+                <button
+                  onClick={() => {
+                    setEditingId(c.id);
+                    setForm({
+                      name: c.name,
+                      description: c.description || "",
+                      start_date: c.start_date,
+                      end_date: c.end_date,
+                      active: c.active,
+                    });
+                  }}
+                  className="px-3 py-1 bg-yellow-400 rounded hover:bg-yellow-500"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => dispatch(deleteCampaign(c.id))}
+                  className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                >
+                  Delete
+                </button>
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+)}
+
     </div>
   );
 }

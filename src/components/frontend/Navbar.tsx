@@ -27,7 +27,7 @@ export default function Navbar() {
             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-rose-400 to-pink-400 group-hover:w-full transition-all duration-300"></span>
           </a>
           <a
-            href="/booking"
+            href="/services"
             className="ml-6 px-4 py-2 bg-gradient-to-r from-rose-400 via-pink-400 to-orange-400 text-white font-semibold rounded-full shadow-md hover:brightness-110 transition duration-300"
           >
             Book Your Transformation

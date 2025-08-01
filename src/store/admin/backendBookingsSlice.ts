@@ -41,7 +41,7 @@ interface BackendBookingsState {
 
 const initialState: BackendBookingsState = {
   bookings: [],
-  loading: false,
+  loading: true,
   error: null,
 };
 

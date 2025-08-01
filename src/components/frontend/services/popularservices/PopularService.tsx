@@ -28,12 +28,10 @@ const ServiceList = () => {
   }
 
   return (
-    <section className="max-w-7xl mx-auto px-6 py-12 bg-gradient-to-br from-rose-50 via-pink-50 to-orange-50 rounded-3xl shadow-lg">
+    <section className="max-w-7xl mx-auto px-6  bg-gradient-to-br from-rose-50 via-pink-50 to-orange-50 rounded-3xl shadow-lg">
       {/* Browse by Category */}
       <div className="mb-12 text-center">
-        <h2 className="text-3xl font-extrabold text-gray-800 mb-6 tracking-wide drop-shadow-sm">
-          Popular Services
-        </h2>
+   
         <div className="flex flex-wrap justify-center gap-4">
           <button
             className={`px-5 py-2 rounded-full text-sm font-semibold border transition
