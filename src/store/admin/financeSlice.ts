@@ -15,6 +15,9 @@ interface FinanceState {
   current: Finance | null;
   loading: boolean;
   error: string | null;
+  bookingRevenue: number;
+  totalRevenue: number;
+  totalExpense: number;
 }
 
 const initialState: FinanceState = {
@@ -22,6 +25,9 @@ const initialState: FinanceState = {
   current: null,
   loading: true,
   error: null,
+  bookingRevenue: 0,
+  totalRevenue: 0,
+  totalExpense: 0,
 };
 
 // ─── Async Thunks ────────────────────────────────
@@ -70,8 +76,11 @@ const financeSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchFinances.fulfilled, (state, action: PayloadAction<Finance[]>) => {
-        state.list = action.payload;
+      .addCase(fetchFinances.fulfilled, (state, action: PayloadAction<any>) => {
+        state.list = action.payload.finances || [];
+        state.bookingRevenue = action.payload.bookingRevenue || 0;
+        state.totalRevenue = action.payload.totalRevenue || 0;
+        state.totalExpense = action.payload.totalExpense || 0;
         state.loading = false;
       })
       .addCase(fetchFinances.rejected, (state, action) => {

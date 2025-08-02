@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
 import { updateBooking, Booking } from '@/store/admin/backendBookingsSlice';
@@ -13,8 +13,11 @@ interface EditBookingModalProps {
   onClose: () => void;
 }
 
+const STATUS_OPTIONS: Booking['status'][] = ['Pending', 'Confirmed', 'Cancelled'];
+
 const EditBookingModal: React.FC<EditBookingModalProps> = ({ booking, onClose }) => {
   const dispatch = useDispatch<AppDispatch>();
+
   const [form, setForm] = useState({
     name: booking.name || '',
     email: booking.email || '',
@@ -24,8 +27,22 @@ const EditBookingModal: React.FC<EditBookingModalProps> = ({ booking, onClose })
     end_time: booking.end_time || '',
     total: booking.total?.toString() || '',
     paid_amount: booking.paid_amount?.toString() || '',
-    status: booking.status || 'pending',
+    status: booking.status || 'Pending',
   });
+
+  useEffect(() => {
+    setForm({
+      name: booking.name || '',
+      email: booking.email || '',
+      phone: booking.phone || '',
+      date: booking.date || '',
+      start_time: booking.start_time || '',
+      end_time: booking.end_time || '',
+      total: booking.total?.toString() || '',
+      paid_amount: booking.paid_amount?.toString() || '',
+      status: booking.status || 'Pending',
+    });
+  }, [booking]);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -34,32 +51,37 @@ const EditBookingModal: React.FC<EditBookingModalProps> = ({ booking, onClose })
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  try {
-    await dispatch(updateBooking({
-      bookingId: booking.id,
-      data: {
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        date: form.date,
-        start_time: form.start_time,
-        end_time: form.end_time,
-        total: parseFloat(form.total),
-        paid_amount: parseFloat(form.paid_amount),
-        status: form.status,
-        user_id: booking.user_id,
-        service_id: booking.service_id,
-        payment_method: booking.payment_method,
-      }
-    })).unwrap();
-    onClose();
-  } catch {
-    setError('Failed to update booking.');
-  }
-};
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const formattedStatus = form.status.charAt(0).toUpperCase() + form.status.slice(1).toLowerCase() as Booking['status'];
 
+      await dispatch(updateBooking({
+        bookingId: booking.id,
+        data: {
+          name: form.name,
+          email: form.email,
+          phone: form.phone,
+          date: form.date,
+          start_time: form.start_time,
+          end_time: form.end_time,
+          total: parseFloat(form.total),
+          paid_amount: parseFloat(form.paid_amount),
+          status: formattedStatus,
+          user_id: booking.user_id,
+          service_id: booking.service_id,
+          payment_method: booking.payment_method,
+        }
+      })).unwrap();
+      onClose();
+    } catch {
+      setError('Failed to update booking.');
+    }
+  };
+
+  const remainingAmount = (
+    parseFloat(form.total || '0') - parseFloat(form.paid_amount || '0')
+  ).toFixed(2);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
@@ -141,8 +163,8 @@ const handleSubmit = async (e: React.FormEvent) => {
               name="total"
               type="number"
               value={form.total}
-              onChange={handleChange}
-              className="w-full border p-2 rounded"
+              readOnly
+              className="w-full border p-2 rounded bg-gray-100 cursor-not-allowed"
             />
           </div>
 
@@ -157,6 +179,16 @@ const handleSubmit = async (e: React.FormEvent) => {
             />
           </div>
 
+          <div>
+            <label className="block font-semibold mb-1 text-green-700">Remaining</label>
+            <input
+              type="number"
+              value={remainingAmount}
+              readOnly
+              className="w-full border p-2 rounded bg-gray-100 cursor-not-allowed text-green-700"
+            />
+          </div>
+
           <div className="col-span-2">
             <label className="block font-semibold mb-1">Status</label>
             <select
@@ -165,9 +197,11 @@ const handleSubmit = async (e: React.FormEvent) => {
               onChange={handleChange}
               className="w-full border p-2 rounded"
             >
-              <option value="pending">Pending</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="cancelled">Cancelled</option>
+              {STATUS_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
             </select>
           </div>
 

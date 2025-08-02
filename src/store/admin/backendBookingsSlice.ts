@@ -24,7 +24,7 @@ export interface Booking {
   service_id?: number;
   service?: Service;
   payment_method?: PaymentMethod;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status: 'Pending' | 'Confirmed' | 'Cancelled';
   date: string;
   start_time?: string;
   end_time?: string;

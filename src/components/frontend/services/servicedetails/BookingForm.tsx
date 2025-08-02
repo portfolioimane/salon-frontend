@@ -95,7 +95,6 @@ const BookingForm = ({ serviceId }: BookingFormProps) => {
         start_time: formData.slotStartTime,
         end_time: formData.slotEndTime,
         payment_method: 'cash',
-        total: 0,
       })
     );
   };

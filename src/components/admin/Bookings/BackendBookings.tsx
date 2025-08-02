@@ -87,6 +87,8 @@ const BackendBookings = () => {
                 <th className="border border-transparent px-4 py-3 text-left">Slot Time</th>
                 <th className="border border-transparent px-4 py-3 text-left">Customer</th>
                 <th className="border border-transparent px-4 py-3 text-left">Phone</th>
+                <th className="border border-transparent px-4 py-3 text-left">Total</th>
+                <th className="border border-transparent px-4 py-3 text-left">Remain_amount</th>
                 <th className="border border-transparent px-4 py-3 text-left">Payment</th>
                 <th className="border border-transparent px-4 py-3 text-left">Status</th>
                 <th className="border border-transparent px-4 py-3 text-center rounded-tr-3xl">Actions</th>
@@ -107,15 +109,22 @@ const BackendBookings = () => {
                   </td>
                   <td className="border border-gray-200 px-4 py-3">{booking.name || `User #${booking.user_id}`}</td>
                   <td className="border border-gray-200 px-4 py-3">{booking.phone || 'N/A'}</td>
+                  <td className="border border-gray-200 px-4 py-3">{booking.total || 'N/A'}</td>
+<td className="border border-gray-200 px-4 py-3">
+  {booking.total && booking.paid_amount !== null
+    ? booking.total - booking.paid_amount
+    : 'N/A'}
+</td>
+
                   <td className="border border-gray-200 px-4 py-3 capitalize">{booking.payment_method || 'N/A'}</td>
                   <td className="border border-gray-200 px-4 py-3">
                     <span
                       className={`font-semibold capitalize ${
-                        booking.status === 'pending'
+                        booking.status === 'Pending'
                           ? 'text-yellow-500'
-                          : booking.status === 'confirmed'
+                          : booking.status === 'Cancelled'
                           ? 'text-pink-600'
-                          : booking.status === 'completed'
+                          : booking.status === 'Confirmed'
                           ? 'text-green-600'
                           : 'text-red-600'
                       }`}
@@ -205,9 +214,9 @@ const BackendBookings = () => {
               <div>
                 <strong>Status:</strong>{' '}
                 <span className={`capitalize ${
-                  viewingBooking.status === 'pending' ? 'text-yellow-500' :
-                  viewingBooking.status === 'completed' ? 'text-green-600' :
-                  viewingBooking.status === 'cancelled' ? 'text-red-600' : ''
+                  viewingBooking.status === 'Pending' ? 'text-yellow-500' :
+                  viewingBooking.status === 'Confirmed' ? 'text-green-600' :
+                  viewingBooking.status === 'Cancelled' ? 'text-red-600' : ''
                 }`}>
                   {viewingBooking.status}
                 </span>

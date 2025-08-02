@@ -2,23 +2,30 @@
 
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import type { RootState, AppDispatch } from "@/store"; // Adjust path if needed
+import type { RootState, AppDispatch } from "@/store";
 import {
   fetchFinances,
   addFinance,
   deleteFinance,
   Finance,
-} from "@/store/admin/financeSlice"; // Adjust path if needed
+} from "@/store/admin/financeSlice";
 
 export default function FinancePage() {
   const dispatch = useDispatch<AppDispatch>();
-  const finances = useSelector((state: RootState) => state.finance.list);
+
+  // Select from the redux state
+  const finance = useSelector((state: RootState) => state.finance.list);
   const loading = useSelector((state: RootState) => state.finance.loading);
   const error = useSelector((state: RootState) => state.finance.error);
 
-  // Separate revenues and expenses by type
-  const revenues = finances.filter((f) => f.type === "revenue");
-  const expenses = finances.filter((f) => f.type === "expense");
+  // New selectors for totals from redux state
+  const totalRevenue = useSelector((state: RootState) => state.finance.totalRevenue);
+  const totalExpense = useSelector((state: RootState) => state.finance.totalExpense);
+  const bookingRevenue = useSelector((state: RootState) => state.finance.bookingRevenue);
+
+  // Separate revenues and expenses (only for display, not totals)
+  const revenues = finance.filter((f) => f.type === "revenue");
+  const expenses = finance.filter((f) => f.type === "expense");
 
   // Local modal & form states
   const [showRevenueModal, setShowRevenueModal] = useState(false);
@@ -27,13 +34,13 @@ export default function FinancePage() {
   const [newRevenue, setNewRevenue] = useState({ title: "", amount: "", date: "" });
   const [newExpense, setNewExpense] = useState({ title: "", amount: "", date: "" });
 
-  // Calculate totals or null while loading
-  const totalRevenue = loading ? null : revenues.reduce((sum, r) => sum + Number(r.amount), 0);
-  const totalExpense = loading ? null : expenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  // Calculate net profit using backend totals
   const netProfit =
-    totalRevenue !== null && totalExpense !== null ? totalRevenue - totalExpense : null;
+    totalRevenue !== null && totalExpense !== null
+      ? totalRevenue - totalExpense
+      : null;
 
-  // Fetch finances on mount
+  // Fetch finance on mount
   useEffect(() => {
     dispatch(fetchFinances());
   }, [dispatch]);
@@ -89,17 +96,25 @@ export default function FinancePage() {
       </h1>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 mb-10">
         {/* Total Revenue */}
         <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl p-6 border border-white/40 flex flex-col">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Total Revenue</h2>
           <p className="text-3xl font-bold text-rose-500">
-            {totalRevenue !== null
-              ? totalRevenue.toLocaleString(undefined, {
+            {loading
+              ? "Loading..."
+              : totalRevenue.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
-                }) + " MAD"
-              : "Loading..."}
+                }) + " MAD"}
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            (Includes booking revenue -paid amount:{" "}
+            {bookingRevenue.toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}{" "}
+            MAD)
           </p>
           <button
             onClick={() => setShowRevenueModal(true)}
@@ -113,12 +128,12 @@ export default function FinancePage() {
         <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-xl p-6 border border-white/40 flex flex-col">
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Total Expenses</h2>
           <p className="text-3xl font-bold text-orange-500">
-            {totalExpense !== null
-              ? totalExpense.toLocaleString(undefined, {
+            {loading
+              ? "Loading..."
+              : totalExpense.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
-                }) + " MAD"
-              : "Loading..."}
+                }) + " MAD"}
           </p>
           <button
             onClick={() => setShowExpenseModal(true)}
@@ -176,7 +191,7 @@ export default function FinancePage() {
                   </td>
                 </tr>
               ))}
-              {revenues.length === 0 && (
+              {revenues.length === 0 && !loading && (
                 <tr>
                   <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
                     No revenues found.
@@ -218,7 +233,7 @@ export default function FinancePage() {
                   </td>
                 </tr>
               ))}
-              {expenses.length === 0 && (
+              {expenses.length === 0 && !loading && (
                 <tr>
                   <td colSpan={4} className="px-6 py-4 text-center text-gray-500">
                     No expenses found.
@@ -346,7 +361,7 @@ export default function FinancePage() {
 
       {/* Loading & error */}
       {loading && (
-        <p className="text-center text-gray-500 mt-4">Loading finances...</p>
+        <p className="text-center text-gray-500 mt-4">Loading finance...</p>
       )}
       {error && (
         <p className="text-center text-red-600 mt-4">Error: {error}</p>
